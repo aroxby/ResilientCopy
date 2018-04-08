@@ -19,7 +19,6 @@ public:
     }
     void drawProgess(double progress) {
         int done = int(width * progress);
-        // int left = width - done;
         fprintf(output, "\r%c", opn);
         int i;
         for(i = 0; i < done; i++) {
