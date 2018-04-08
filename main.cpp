@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <ctime>
 #include <Windows.h>
 #include <WinIoCtl.h>
 using namespace std;
@@ -16,6 +17,7 @@ public:
     }
     void useConsole() {
         fprintf(output, "\n\r");
+        start = time(NULL);
     }
     void drawProgess(double progress) {
         int done = int(width * progress);
@@ -28,14 +30,55 @@ public:
             putc(rem, output);
         }
         fprintf(output, "%c %03.1f%%", cls, progress*100.0);
+        showTime(progress);
     }
     void dropConsole() {
         putc('\n', output);
+    }
+protected:
+    class ReadableTime {
+    public:
+        int hours;
+        int minutes;
+        int seconds;
+
+        ReadableTime() : hours(0), minutes(0), seconds(0) { }
+
+        void rationalize() {
+            while(seconds > 60) {
+                minutes++;
+                seconds -= 60;
+            }
+
+            while(minutes > 60) {
+                hours++;
+                minutes -= 60;
+            }
+        }
+    };
+
+    void showTime(double progress) {
+        time_t elapsed_tm = time(NULL);
+        double elapsed_seconds = difftime(elapsed_tm, start);
+        double eta_seconds = elapsed_seconds / progress - elapsed_seconds;
+
+        ReadableTime elapsed;
+        elapsed.seconds = difftime(elapsed_seconds, 0);
+        elapsed.rationalize();
+
+        ReadableTime eta;
+        eta.seconds = eta_seconds;
+        eta.rationalize();
+
+        fprintf(output, " Elpsd %02i:%02i:%02i ETA %02i:%02i:%02i",
+            elapsed.hours, elapsed.minutes, elapsed.seconds,
+            eta.hours, eta.minutes, eta.seconds);
     }
 
 private:
     int width;
     FILE *output;
+    time_t start;
     static const char fin = '+';
     static const char rem = '-';
     static const char opn = '[';
@@ -104,7 +147,7 @@ int main(int argc, char *argv[]) {
     DWORD bytesRead = 0;
     DWORD bytesWritten = 0;
     long long totalWritten = 0;
-    ProgressBar progress(60);
+    ProgressBar progress(30);
     printf("Copy started\n");
     progress.useConsole();
     do {
