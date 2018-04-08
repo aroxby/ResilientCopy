@@ -154,21 +154,28 @@ int main(int argc, char *argv[]) {
         success = FALSE;
         bytesRead = 0;
         bytesWritten = 0;
+        SetLastError(0);
         success = ReadFile(hSrc, copyBuffer, copyBufferLen, &bytesRead, NULL);
         if(!success) {
-            progress.dropConsole();
-            CloseHandle(hDst);
-            CloseHandle(hSrc);
-            fprintf(stderr, "Reading source file failed with error: %i\n", GetLastError());
-            return 15;
+            DWORD error = GetLastError();
+            if(error != 23) {   // CRC error
+                progress.dropConsole();
+                CloseHandle(hDst);
+                CloseHandle(hSrc);
+                fprintf(stderr, "Reading source file failed with error: %i\n", error);
+                return 15;
+            }
+            bytesRead = 0;
         }
-        success = WriteFile(hDst, copyBuffer, bytesRead, &bytesWritten, NULL);
-        if(!success) {
-            progress.dropConsole();
-            CloseHandle(hDst);
-            CloseHandle(hSrc);
-            fprintf(stderr, "Reading source file failed with error: %i\n", GetLastError());
-            return 17;
+        if(bytesRead) {
+            success = WriteFile(hDst, copyBuffer, bytesRead, &bytesWritten, NULL);
+            if(!success) {
+                progress.dropConsole();
+                CloseHandle(hDst);
+                CloseHandle(hSrc);
+                fprintf(stderr, "Reading source file failed with error: %i\n", GetLastError());
+                return 17;
+            }
         }
         totalWritten += bytesWritten;
         progress.drawProgess(totalWritten / totalBytesToWrite);
