@@ -20,15 +20,13 @@ int main(int argc, char *argv[]) {
     static const size_t copyBufferLen = 4194304;
     void *copyBuffer = malloc(copyBufferLen);
     
-    HANDLE hSrc = CreateFile(
-        src, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hSrc = CreateFile(src, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if(!hSrc) {
         fprintf(stderr, "Opening source file failed with error: %i\n", GetLastError());
         return 5;
     }
     
-    HANDLE hDst = CreateFile(
-        dst, GENERIC_WRITE, /*No sharing*/0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE hDst = CreateFile(dst, GENERIC_WRITE, /*No sharing*/0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
     if(!hDst) {
         fprintf(stderr, "Opening destination file failed with error: %i\n", GetLastError());
         return 7;
