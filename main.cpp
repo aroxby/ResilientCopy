@@ -149,6 +149,9 @@ int main(int argc, char *argv[]) {
     DWORD bytesRead = 0;
     DWORD bytesWritten = 0;
     long long totalWritten = 0;
+    int maxTries = 8;
+    int curTries = 1;
+    bool isRetry = false;
     ProgressBar progress(30);
     printf("Copy started\n");
     progress.useConsole();
@@ -157,17 +160,29 @@ int main(int argc, char *argv[]) {
         bytesRead = 0;
         bytesWritten = 0;
         SetLastError(0);
+        isRetry = false;
         success = ReadFile(hSrc, copyBuffer, copyBufferLen, &bytesRead, NULL);
         if(!success) {
             DWORD error = GetLastError();
-            if(error != 23) {   // CRC error
+            if(error == 23) {   // CRC error
+                if(curTries >= maxTries) {
+                    printf("\nFailed after max retries\n");
+                    return 100;
+                } else {
+                    printf("\nRetry(%i)!\n", error);
+                    bytesRead = 0;
+                    isRetry = true;
+                    curTries++;
+                }
+            } else {
                 progress.dropConsole();
                 CloseHandle(hDst);
                 CloseHandle(hSrc);
                 fprintf(stderr, "Reading source file failed with error: %i\n", error);
                 return 15;
             }
-            bytesRead = 0;
+        } else {
+            curTries = 1;
         }
         if(bytesRead) {
             success = WriteFile(hDst, copyBuffer, bytesRead, &bytesWritten, NULL);
@@ -175,16 +190,15 @@ int main(int argc, char *argv[]) {
                 progress.dropConsole();
                 CloseHandle(hDst);
                 CloseHandle(hSrc);
-                fprintf(stderr, "Reading source file failed with error: %i\n", GetLastError());
+                fprintf(stderr, "Writing destination file failed with error: %i\n", GetLastError());
                 return 17;
             }
         }
         totalWritten += bytesWritten;
         progress.drawProgess(totalWritten / totalBytesToWrite);
 
-    } while(bytesRead);
+    } while(isRetry || bytesRead);
     progress.dropConsole();
     printf("Copy complete\n");
-
     return 0;
 }
