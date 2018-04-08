@@ -133,12 +133,14 @@ int main(int argc, char *argv[]) {
     bool gotSize = getFileSize(hSrc, &srcSize);
     double totalBytesToWrite = srcSize;
     if(!gotSize) {
+        CloseHandle(hSrc);
         fprintf(stderr, "Getting source size failed with error: %i\n", GetLastError());
         return 6;
     }
 
     HANDLE hDst = CreateFile(dst, GENERIC_WRITE, /*No sharing*/0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
     if(!hDst) {
+        CloseHandle(hSrc);
         fprintf(stderr, "Opening destination file failed with error: %i\n", GetLastError());
         return 7;
     }
